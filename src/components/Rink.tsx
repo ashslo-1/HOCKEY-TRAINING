@@ -114,7 +114,8 @@ function drawGoalie(ctx: CanvasRenderingContext2D, g: Goalie) {
 function computeLayout(w: number, h: number, dpr: number): Layout {
   const portrait = h > w * 1.05
   const padX = Math.max(16, w * 0.04)
-  const padY = Math.max(84, h * 0.1) // leave room for the dock and footer
+  // Leave room for the dock and footer. Phones get less padding so the rink is as large as possible.
+  const padY = portrait ? 70 : Math.max(84, h * 0.1)
   const aw = w - padX * 2
   const ah = h - padY * 2
   const s = portrait ? Math.min(aw / W, ah / L) : Math.min(aw / L, ah / W)
@@ -444,6 +445,12 @@ export default function Rink() {
         c.height = Math.round(rect.height * dpr)
       }
       drawStatic(sctx, lay)
+      // Expose the rink's on-screen size so the hero text can be sized to fit inside it
+      const host = canvas.parentElement
+      if (host) {
+        host.style.setProperty('--rink-w', `${(lay.portrait ? W : L) * lay.s}px`)
+        host.style.setProperty('--rink-h', `${(lay.portrait ? L : W) * lay.s}px`)
+      }
       if (reduceMotion) render(0)
     }
 

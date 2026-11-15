@@ -17,7 +17,7 @@ function Social({ path }: { path: string }) {
 
 export default function Hero() {
   return (
-    <section style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: '#04080c' }}>
+    <section style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: '#04080c', '--rink-w': '90vw', '--rink-h': '60vh' } as CSSProperties}>
       <Rink />
       {/* Overlays */}
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.12)', pointerEvents: 'none' }} />
@@ -26,12 +26,13 @@ export default function Hero() {
       {/* Dark radial gradient behind the text to keep it readable */}
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(760px, 100%)', height: '520px', background: 'radial-gradient(ellipse at center, rgba(2,10,18,0.5) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
-      {/* Centered lockup */}
-      <div style={{ position: 'relative', zIndex: 10, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 24px', pointerEvents: 'none' }}>
+      {/* Centered lockup. Sizes come from .hero-* classes in index.css so the text fits inside the rink. */}
+      <div className="hero-content" style={{ position: 'relative', zIndex: 10, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', pointerEvents: 'none' }}>
         {/* Brand */}
         <motion.div
+          className="hero-lockup"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '26px' }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {/* Crossed sticks over a puck */}
@@ -40,9 +41,9 @@ export default function Hero() {
               <path d="M18.5 2.5 L9.4 16.2 Q8.6 17.4 7.1 17.4 H3" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
               <ellipse cx="12" cy="21" rx="3.2" ry="1.3" fill="#fff" />
             </svg>
-            <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#fff', fontFamily: "'Inter', sans-serif", paddingLeft: '0.28em' }}>Goalie Training</span>
+            <span className="hero-brand" style={{ fontWeight: 500, textTransform: 'uppercase', color: '#fff', fontFamily: "'Inter', sans-serif" }}>Goalie Coaching</span>
           </div>
-          <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '0.34em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)', fontFamily: "'Inter', sans-serif", paddingLeft: '0.34em' }}>Saves · Schedule · Goals</span>
+          <span className="hero-tag" style={{ fontWeight: 500, textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)', fontFamily: "'Inter', sans-serif" }}>Drills · Schedule · Goals</span>
         </motion.div>
 
         {/* Headline */}
@@ -50,25 +51,27 @@ export default function Hero() {
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.24, ease: 'easeOut' }}
           style={{ margin: 0, fontFamily: "'Playfair Display', Georgia, serif", textTransform: 'uppercase', color: '#fff', textShadow: '0 2px 40px rgba(0,0,0,0.55)' }}
         >
-          <span style={{ display: 'block', fontWeight: 400, fontSize: 'clamp(3.3rem, 8.6vw, 6.4rem)', lineHeight: 1, letterSpacing: '0.02em' }}>Sloan</span>
-          <span style={{ display: 'block', fontWeight: 700, fontSize: 'clamp(3rem, 8.2vw, 6.2rem)', lineHeight: 0.98, letterSpacing: '0.01em' }}>Hockey</span>
+          <span className="hero-h1-top" style={{ display: 'block', fontWeight: 400, lineHeight: 1, letterSpacing: '0.02em' }}>Nolan</span>
+          <span className="hero-h1-bottom" style={{ display: 'block', fontWeight: 700, lineHeight: 0.98, letterSpacing: '0.01em' }}>Sloan</span>
         </motion.h1>
 
         {/* Subtext */}
         <motion.p
+          className="hero-sub"
           initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.42, ease: 'easeOut' }}
-          style={{ margin: '24px 0 0', maxWidth: '560px', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 400, fontSize: '18px', lineHeight: 1.5, color: 'rgba(255,255,255,0.88)', textShadow: '0 1px 20px rgba(0,0,0,0.6)' }}
+          style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 400, lineHeight: 1.5, color: 'rgba(255,255,255,0.88)', textShadow: '0 1px 20px rgba(0,0,0,0.6)' }}
         >
-          Drills, practice plans, and a training schedule for Sloan Hockey's goalie.
+          Goalie drills, practice plans, and a training schedule from coach Nolan Sloan.
         </motion.p>
 
         {/* Oval button — true ellipse via border-radius: 50% */}
         <motion.a
           href="#train"
+          className="hero-btn"
           initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.58, ease: 'easeOut' }}
           whileHover={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
           whileTap={{ scale: 0.97 }}
-          style={{ marginTop: '38px', padding: '20px 58px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.6)', color: '#fff', textDecoration: 'none', fontSize: '12px', fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", backgroundColor: 'rgba(255,255,255,0)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', pointerEvents: 'auto' }}
+          style={{ borderRadius: '50%', border: '1px solid rgba(255,255,255,0.6)', color: '#fff', textDecoration: 'none', fontWeight: 500, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', pointerEvents: 'auto' }}
         >
           Start Training
         </motion.a>

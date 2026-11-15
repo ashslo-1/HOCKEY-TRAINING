@@ -23,3 +23,34 @@
   .hero-footer { padding: 0 20px 22px !important; }
   .hero-footer-center { display: none !important; }
 }
+
+/*
+  Hero text sizes. --rink-w and --rink-h are the rink's on-screen width and height in px,
+  set by Rink.tsx, so the text block always fits inside the boards.
+*/
+.hero-content { padding: 0 16px; }
+.hero-lockup { margin-bottom: min(26px, calc(var(--rink-h) * 0.04)); }
+.hero-brand {
+  font-size: min(15px, calc(var(--rink-w) * 0.052));
+  letter-spacing: 0.28em;
+  padding-left: 0.28em;
+}
+.hero-tag {
+  font-size: min(10px, calc(var(--rink-w) * 0.04));
+  letter-spacing: 0.3em;
+  padding-left: 0.3em;
+}
+.hero-h1-top { font-size: min(6.4rem, calc(var(--rink-h) * 0.16), calc(var(--rink-w) * 0.2)); }
+.hero-h1-bottom { font-size: min(6.2rem, calc(var(--rink-h) * 0.155), calc(var(--rink-w) * 0.19)); }
+.hero-sub {
+  margin: min(24px, calc(var(--rink-h) * 0.035)) 0 0;
+  max-width: min(560px, calc(var(--rink-w) - 32px));
+  font-size: max(13px, min(18px, calc(var(--rink-w) * 0.06)));
+  text-wrap: balance;
+}
+.hero-btn {
+  margin-top: min(38px, calc(var(--rink-h) * 0.06));
+  padding: min(20px, calc(var(--rink-h) * 0.03)) min(58px, calc(var(--rink-w) * 0.12));
+  font-size: min(12px, calc(var(--rink-w) * 0.05));
+  letter-spacing: 0.22em;
+}
