@@ -1,10 +1,19 @@
-import type { CSSProperties } from 'react'
-import { motion } from 'framer-motion'
-import Rink from './Rink'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import Rink, { type GameStatus } from './Rink'
+import { careerSvPct, formatSvPct } from '../data/nolan'
+
+// Background video from the original template, loaded from its hosted URL
+const VIDEO_URL = 'https://pub-1e5b4001b36b47e28e6a2fb775966a79.r2.dev/templates/glacier/hero.mp4'
 
 const label: CSSProperties = {
   fontSize: '10.5px', fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase',
   color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", textDecoration: 'none',
+}
+
+const pillButton: CSSProperties = {
+  padding: '12px 26px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.08)',
+  color: '#fff', fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer',
 }
 
 function Social({ path }: { path: string }) {
@@ -16,9 +25,35 @@ function Social({ path }: { path: string }) {
 }
 
 export default function Hero() {
+  const [playing, setPlaying] = useState(false)
+  const [round, setRound] = useState(0)
+  const [status, setStatus] = useState<GameStatus | null>(null)
+
+  const start = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setStatus(null)
+    setRound((n) => n + 1)
+    setPlaying(true)
+  }
+  const quit = () => {
+    setPlaying(false)
+    setStatus(null)
+  }
+
+  // The navbar's target button starts a round through this event
+  useEffect(() => {
+    const onStart = () => start()
+    window.addEventListener('save-challenge:start', onStart)
+    return () => window.removeEventListener('save-challenge:start', onStart)
+  }, [])
+
+  const nolanSv = careerSvPct()
+  const done = status?.phase === 'done'
+
   return (
-    <section style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: '#04080c', '--rink-w': '90vw', '--rink-h': '60vh' } as CSSProperties}>
-      <Rink />
+    <section id="top" style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: '#04080c', touchAction: playing ? 'none' : 'auto', '--rink-w': '90vw', '--rink-h': '60vh' } as CSSProperties}>
+      <video style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} src={VIDEO_URL} autoPlay muted loop playsInline />
+      <Rink playing={playing} round={round} onUpdate={setStatus} />
       {/* Overlays */}
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.12)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.26) 0%, transparent 22%, transparent 60%, rgba(0,0,0,0.38) 100%)', pointerEvents: 'none' }} />
@@ -27,7 +62,7 @@ export default function Hero() {
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(760px, 100%)', height: '520px', background: 'radial-gradient(ellipse at center, rgba(2,10,18,0.5) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
       {/* Centered lockup. Sizes come from .hero-* classes in index.css so the text fits inside the rink. */}
-      <div className="hero-content" style={{ position: 'relative', zIndex: 10, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', pointerEvents: 'none' }}>
+      <motion.div className="hero-content" animate={{ opacity: playing ? 0 : 1 }} transition={{ duration: 0.4 }} style={{ position: 'relative', zIndex: 10, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', pointerEvents: 'none' }}>
         {/* Brand */}
         <motion.div
           className="hero-lockup"
@@ -65,17 +100,90 @@ export default function Hero() {
         </motion.p>
 
         {/* Oval button — true ellipse via border-radius: 50% */}
-        <motion.a
-          href="#train"
+        <motion.button
+          type="button"
+          onClick={start}
           className="hero-btn"
           initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.58, ease: 'easeOut' }}
           whileHover={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
           whileTap={{ scale: 0.97 }}
-          style={{ borderRadius: '50%', border: '1px solid rgba(255,255,255,0.6)', color: '#fff', textDecoration: 'none', fontWeight: 500, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', pointerEvents: 'auto' }}
+          style={{ borderRadius: '50%', border: '1px solid rgba(255,255,255,0.6)', color: '#fff', cursor: 'pointer', fontWeight: 500, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', pointerEvents: playing ? 'none' : 'auto' }}
         >
-          Start Training
-        </motion.a>
-      </div>
+          Play Goalie
+        </motion.button>
+        <span className="hero-hint" style={{ marginTop: '12px', fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+          Stop 10 shots in the save challenge
+        </span>
+      </motion.div>
+
+      {/* Save challenge: score display while playing */}
+      <AnimatePresence>
+        {playing && !done && (
+          <motion.div
+            key="hud"
+            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ position: 'absolute', top: '84px', left: 0, right: 0, zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', pointerEvents: 'none', padding: '0 16px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '18px', padding: '10px 20px', borderRadius: '999px', background: 'rgba(4,10,16,0.7)', border: '1px solid rgba(255,255,255,0.14)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span>Shot {Math.min((status?.shot ?? 0) + 1, status?.total ?? 10)}/{status?.total ?? 10}</span>
+              <span style={{ color: '#9fd8ff' }}>Saves {status?.saves ?? 0}</span>
+              <span style={{ color: '#ff8a8a' }}>Goals {status?.goals ?? 0}</span>
+              <button type="button" onClick={quit} style={{ ...pillButton, padding: '6px 12px', fontSize: '10px', pointerEvents: 'auto' }}>Quit</button>
+            </div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.75)', textAlign: 'center', textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>
+              Slide the goalie with the gold ring to block shots. Use your mouse, finger, or arrow keys.
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Save challenge: "SAVE" or "GOAL" after each shot */}
+      <AnimatePresence>
+        {playing && !done && status?.last && (
+          <motion.div
+            key={`flash-${status.shot}`}
+            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
+            style={{ position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)', zIndex: 20, textAlign: 'center', pointerEvents: 'none', fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 'clamp(2.4rem, 9vw, 5rem)', textTransform: 'uppercase', color: status.last === 'save' ? '#bfe6ff' : '#ff6b6b', textShadow: '0 2px 30px rgba(0,0,0,0.7)' }}
+          >
+            {status.last === 'save' ? 'Save' : 'Goal'}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Save challenge: results */}
+      <AnimatePresence>
+        {playing && done && status && (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ position: 'absolute', inset: 0, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(2,6,10,0.45)' }}
+          >
+            <div style={{ width: 'min(380px, 100%)', padding: '32px 26px', borderRadius: '24px', textAlign: 'center', background: 'rgba(8,16,24,0.88)', border: '1px solid rgba(255,255,255,0.14)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
+              <div style={label}>Save challenge</div>
+              <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '64px', fontWeight: 700, lineHeight: 1.05, marginTop: '10px' }}>
+                {status.saves}/{status.total}
+              </div>
+              <div style={{ ...label, marginTop: '6px' }}>Saves</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '28px', marginTop: '22px', fontFamily: "'Inter', sans-serif" }}>
+                <div>
+                  <div style={{ fontSize: '24px', fontWeight: 600 }}>{formatSvPct(status.saves / status.total)}</div>
+                  <div style={{ ...label, fontSize: '9.5px', marginTop: '4px' }}>Your save %</div>
+                </div>
+                {nolanSv != null && (
+                  <div>
+                    <div style={{ fontSize: '24px', fontWeight: 600 }}>{formatSvPct(nolanSv)}</div>
+                    <div style={{ ...label, fontSize: '9.5px', marginTop: '4px' }}>Nolan's career save %</div>
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '28px', flexWrap: 'wrap' }}>
+                <button type="button" onClick={start} style={{ ...pillButton, background: '#fff', color: '#06121c' }}>Play again</button>
+                <button type="button" onClick={quit} style={pillButton}>Done</button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer bar */}
       <motion.div

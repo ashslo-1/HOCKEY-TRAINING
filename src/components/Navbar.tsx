@@ -9,25 +9,10 @@ function HomeIcon() {
   )
 }
 
-function CheckIcon() {
+function StatsIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="8.4" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M8.5 12.2 L11 14.7 L15.6 9.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="4" y="5.5" width="16" height="15" rx="2.6" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M4 9.6 H20" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M8.5 3.6 V6.4 M15.5 3.6 V6.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <g fill="currentColor">
-        <circle cx="8.4" cy="13" r="0.9" /><circle cx="12" cy="13" r="0.9" /><circle cx="15.6" cy="13" r="0.9" />
-        <circle cx="8.4" cy="16.6" r="0.9" /><circle cx="12" cy="16.6" r="0.9" /><circle cx="15.6" cy="16.6" r="0.9" />
-      </g>
+      <path d="M5 20 V13 M10 20 V8 M15 20 V11 M20 20 V5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }
@@ -44,11 +29,16 @@ function TargetIcon() {
 }
 
 const items = [
-  { key: 'home', Icon: HomeIcon },
-  { key: 'tasks', Icon: CheckIcon },
-  { key: 'calendar', Icon: CalendarIcon },
-  { key: 'goals', Icon: TargetIcon },
+  { key: 'home', label: 'Home', Icon: HomeIcon },
+  { key: 'stats', label: 'Stats', Icon: StatsIcon },
+  { key: 'play', label: 'Play the save challenge', Icon: TargetIcon },
 ]
+
+function go(key: string) {
+  if (key === 'stats') document.getElementById('stats')?.scrollIntoView({ behavior: 'smooth' })
+  else if (key === 'play') window.dispatchEvent(new Event('save-challenge:start'))
+  else window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 export default function Navbar() {
   const [active, setActive] = useState('home')
@@ -67,13 +57,14 @@ export default function Navbar() {
           boxShadow: '0 12px 44px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.16)',
         }}
       >
-        {items.map(({ key, Icon }) => {
+        {items.map(({ key, label, Icon }) => {
           const isActive = active === key
           return (
             <button
               key={key}
-              onClick={() => setActive(key)}
-              aria-label={key}
+              onClick={() => { setActive(key); go(key) }}
+              aria-label={label}
+              title={label}
               style={{
                 position: 'relative', width: '58px', height: '30px', borderRadius: '999px',
                 border: 'none', background: 'transparent', cursor: 'pointer',

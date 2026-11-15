@@ -1,5 +1,22 @@
 import { useEffect, useRef } from 'react'
 
+export type GameStatus = {
+  phase: 'playing' | 'done'
+  shot: number // shots taken so far
+  saves: number
+  goals: number
+  total: number
+  last: 'save' | 'goal' | null // result of the most recent shot
+}
+
+type RinkProps = {
+  playing: boolean // true while the save challenge is running
+  round: number // increment to start a new round
+  onUpdate: (status: GameStatus) => void
+}
+
+export const SHOTS_PER_ROUND = 10
+
 // All rink geometry is in feet, using NHL dimensions.
 // x runs along the length (0 → 200), y across the width (0 → 85).
 const L = 200
@@ -17,12 +34,16 @@ const BLUE = 'rgba(46, 116, 245, 0.8)'
 
 type Layout = { s: number; ox: number; oy: number; portrait: boolean; dpr: number; w: number; h: number }
 type Spark = { x: number; y: number; vx: number; vy: number; life: number }
-type Goalie = { left: boolean; y: number; saveT: number }
+type Goalie = { left: boolean; y: number; saveT: number; player: boolean }
 
 const GOALIE_R = 1.9 // collision radius of the goalie's body and pads
 const GOALIE_OFFSET = 2.4 // distance in front of the goal line
 const GOALIE_SPEED = 12 // ft/s side-to-side
 const GOALIE_RANGE = 3.4 // how far from center the goalie can slide
+
+// The player defends the right net (bottom net on phones)
+const PLAYER_LEFT = false
+const PLAYER_SPEED = 34 // ft/s, faster than the computer goalie so the player can react
 
 function goalieX(left: boolean) {
   return left ? GOAL_X + GOALIE_OFFSET : L - GOAL_X - GOALIE_OFFSET
@@ -100,6 +121,17 @@ function drawGoalie(ctx: CanvasRenderingContext2D, g: Goalie) {
     ctx.lineTo(x + d * 0.35, y + o)
   }
   ctx.stroke()
+
+  // Gold ring under the goalie the player controls
+  if (g.player) {
+    ctx.strokeStyle = 'rgba(255, 205, 80, 0.85)'
+    ctx.lineWidth = 0.2
+    ctx.setLineDash([0.6, 0.5])
+    ctx.beginPath()
+    ctx.arc(x, y, GOALIE_R + 0.9, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.setLineDash([])
+  }
 
   // Brief ring after a save
   if (g.saveT > 0) {
@@ -262,7 +294,8 @@ function drawStatic(ctx: CanvasRenderingContext2D, lay: Layout) {
   ctx.clearRect(0, 0, w * dpr, h * dpr)
 
   // Arena background: dark fill with a lighter radial gradient centered on the rink
-  ctx.fillStyle = '#04080c'
+  // Semi-transparent so the background video shows around the rink
+  ctx.fillStyle = 'rgba(4, 8, 12, 0.55)'
   ctx.fillRect(0, 0, w * dpr, h * dpr)
   const spot = ctx.createRadialGradient(w * dpr / 2, h * dpr / 2, 0, w * dpr / 2, h * dpr / 2, Math.max(w, h) * dpr * 0.7)
   spot.addColorStop(0, 'rgba(70, 120, 160, 0.28)')
@@ -379,8 +412,13 @@ function drawStatic(ctx: CanvasRenderingContext2D, lay: Layout) {
   ctx.stroke()
 }
 
-export default function Rink() {
+export default function Rink(props: RinkProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // The animation loop reads the latest props from this ref, so the effect never restarts
+  const propsRef = useRef(props)
+  useEffect(() => {
+    propsRef.current = props
+  })
 
   useEffect(() => {
     const canvas = canvasRef.current!
@@ -395,16 +433,174 @@ export default function Rink() {
     const puck = { x: L / 2, y: CY, vx: 0, vy: 0, spin: 0 }
     let sparks: Spark[] = []
     let idle = 0.9 // seconds until the next shot or pass
+    let trailFade = 0 // seconds since the trail was last faded
     let goal: { left: boolean; t: number } | null = null
     const goalies: Goalie[] = [
-      { left: true, y: CY, saveT: 0 },
-      { left: false, y: CY, saveT: 0 },
+      { left: true, y: CY, saveT: 0, player: false },
+      { left: false, y: CY, saveT: 0, player: false },
     ]
+    const playerGoalie = goalies.find((g) => g.left === PLAYER_LEFT)!
+
+    // Save challenge state
+    type Phase = 'off' | 'setup' | 'windup' | 'pass' | 'shot' | 'resolved' | 'done'
+    const game = {
+      phase: 'off' as Phase,
+      t: 0,
+      shot: 0,
+      saves: 0,
+      goals: 0,
+      round: -1,
+      last: null as GameStatus['last'],
+      passTo: null as { x: number; y: number } | null,
+      saved: false,
+    }
+    let aimY: number | null = null // where the player wants the goalie, in rink feet
+    let keyDir = 0 // -1, 0 or 1 while an arrow key is held
+
+    const emit = () => {
+      propsRef.current.onUpdate({
+        phase: game.phase === 'done' ? 'done' : 'playing',
+        shot: game.shot,
+        saves: game.saves,
+        goals: game.goals,
+        total: SHOTS_PER_ROUND,
+        last: game.last,
+      })
+    }
+
+    const startRound = () => {
+      Object.assign(game, { phase: 'setup', t: 0, shot: 0, saves: 0, goals: 0, last: null, passTo: null, saved: false })
+      goal = null
+      playerGoalie.player = true
+      playerGoalie.y = CY
+      aimY = null
+      tctx.setTransform(1, 0, 0, 1, 0, 0)
+      tctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height)
+      emit()
+    }
+
+    const stopRound = () => {
+      game.phase = 'off'
+      playerGoalie.player = false
+      goal = null
+      idle = 0.5
+    }
+
+    const shoot = () => {
+      const tx = L - GOAL_X + 1
+      const ty = CY + (Math.random() * 2 - 1) * (NET_HALF - 0.5)
+      const dx = tx - puck.x
+      const dy = ty - puck.y
+      const d = Math.hypot(dx, dy) || 1
+      const speed = 62 + game.shot * 5 + Math.random() * 14
+      puck.vx = (dx / d) * speed
+      puck.vy = (dy / d) * speed
+      puck.spin = (Math.random() - 0.5) * 24
+      game.phase = 'shot'
+      game.t = 0
+      game.saved = false
+    }
+
+    const resolveShot = (result: 'save' | 'goal') => {
+      game.shot += 1
+      if (result === 'save') game.saves += 1
+      else game.goals += 1
+      game.last = result
+      game.phase = 'resolved'
+      game.t = 0
+      emit()
+    }
+
+    // Runs once per frame while the challenge is active
+    const stepGame = (dt: number) => {
+      game.t += dt
+      switch (game.phase) {
+        case 'setup': {
+          // Place the puck somewhere in the player's defensive zone, then wind up
+          puck.x = L - GOAL_X - (26 + Math.random() * 40)
+          puck.y = 10 + Math.random() * (W - 20)
+          puck.vx = puck.vy = 0
+          game.passTo = Math.random() < 0.35
+            ? { x: L - GOAL_X - (18 + Math.random() * 16), y: puck.y < CY ? CY + 8 + Math.random() * 14 : CY - 8 - Math.random() * 14 }
+            : null
+          game.phase = 'windup'
+          game.t = 0
+          break
+        }
+        case 'windup':
+          if (game.t > Math.max(0.45, 1.0 - game.shot * 0.05)) {
+            if (game.passTo) {
+              const dx = game.passTo.x - puck.x
+              const dy = game.passTo.y - puck.y
+              const d = Math.hypot(dx, dy) || 1
+              puck.vx = (dx / d) * 80
+              puck.vy = (dy / d) * 80
+              game.phase = 'pass'
+              game.t = 0
+            } else {
+              shoot()
+            }
+          }
+          break
+        case 'pass':
+          if (!game.passTo || Math.hypot(game.passTo.x - puck.x, game.passTo.y - puck.y) < 2.5 || game.t > 1.5) shoot()
+          break
+        case 'shot':
+          if (goal && goal.left === PLAYER_LEFT) resolveShot('goal')
+          else if (game.saved) resolveShot('save')
+          else if (game.t > 3) game.phase = 'setup' // missed the net; retake without counting it
+          break
+        case 'resolved':
+          if (game.t > 1.1) {
+            goal = null
+            if (game.shot >= SHOTS_PER_ROUND) {
+              game.phase = 'done'
+              puck.vx = puck.vy = 0
+              emit()
+            } else {
+              game.phase = 'setup'
+            }
+          }
+          break
+      }
+    }
+
+    // Convert a pointer position to the rink's across-the-ice coordinate
+    const onPointer = (e: PointerEvent) => {
+      if (game.phase === 'off') return
+      const rect = canvas.getBoundingClientRect()
+      const sx = e.clientX - rect.left
+      const sy = e.clientY - rect.top
+      aimY = lay.portrait ? (sx - lay.ox) / lay.s : (sy - lay.oy) / lay.s
+    }
+    const keyMap: Record<string, number> = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (game.phase === 'off' || !(e.key in keyMap)) return
+      e.preventDefault()
+      keyDir = keyMap[e.key]
+      if (aimY === null) aimY = playerGoalie.y
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (keyMap[e.key] === keyDir) keyDir = 0
+    }
+    window.addEventListener('pointermove', onPointer)
+    window.addEventListener('pointerdown', onPointer)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
 
     // Slide toward where the puck will cross the goalie's line, or drift back to center
     const moveGoalies = (dt: number) => {
+      if (keyDir !== 0 && aimY !== null) aimY += keyDir * PLAYER_SPEED * dt
       for (const g of goalies) {
         const gx = goalieX(g.left)
+        if (g.player) {
+          if (aimY !== null) aimY = Math.max(CY - GOALIE_RANGE - 2, Math.min(CY + GOALIE_RANGE + 2, aimY))
+          const ty = Math.max(CY - GOALIE_RANGE, Math.min(CY + GOALIE_RANGE, aimY ?? CY))
+          const step = PLAYER_SPEED * dt
+          g.y += Math.max(-step, Math.min(step, ty - g.y))
+          g.saveT = Math.max(0, g.saveT - dt)
+          continue
+        }
         const incoming = g.left ? puck.vx < -5 && puck.x > gx : puck.vx > 5 && puck.x < gx
         const onSide = g.left ? puck.x < L / 2 : puck.x > L / 2
         let ty = CY
@@ -431,6 +627,7 @@ export default function Rink() {
           puck.y = g.y + ny * min
           const towardNet = g.left ? puck.vx < 0 : puck.vx > 0
           if (towardNet && Math.hypot(puck.vx, puck.vy) > 25) g.saveT = 0.7
+          if (g.player && game.phase === 'shot') game.saved = true
           reflect(-nx, -ny, 0.45)
         }
       }
@@ -451,7 +648,6 @@ export default function Rink() {
         host.style.setProperty('--rink-w', `${(lay.portrait ? W : L) * lay.s}px`)
         host.style.setProperty('--rink-h', `${(lay.portrait ? L : W) * lay.s}px`)
       }
-      if (reduceMotion) render(0)
     }
 
     const spray = (x: number, y: number, nx: number, ny: number, strength: number) => {
@@ -560,7 +756,7 @@ export default function Rink() {
         puck.vy *= Math.exp(-6 * dt)
         puck.x += puck.vx * dt
         puck.y += puck.vy * dt
-        if (goal.t > 2.2) {
+        if (game.phase === 'off' && goal.t > 2.2) {
           goal = null
           puck.x = L / 2
           puck.y = CY
@@ -600,7 +796,7 @@ export default function Rink() {
           tctx.stroke()
         }
 
-        if (speed < 14) {
+        if (game.phase === 'off' && speed < 14) {
           idle -= dt
           if (idle <= 0) {
             nextPlay()
@@ -621,12 +817,17 @@ export default function Rink() {
       }
       sparks = sparks.filter((s) => s.life > 0)
 
-      // Fade old trail marks
-      tctx.setTransform(1, 0, 0, 1, 0, 0)
-      tctx.globalCompositeOperation = 'destination-out'
-      tctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.9)})`
-      tctx.fillRect(0, 0, trailCanvas.width, trailCanvas.height)
-      tctx.globalCompositeOperation = 'source-over'
+      // Fade old trail marks. Fading in larger steps a few times a second avoids the
+      // 8-bit rounding that leaves faint lines behind when each frame removes very little.
+      trailFade += dt
+      if (trailFade >= 0.2) {
+        tctx.setTransform(1, 0, 0, 1, 0, 0)
+        tctx.globalCompositeOperation = 'destination-out'
+        tctx.fillStyle = 'rgba(0,0,0,0.22)'
+        tctx.fillRect(0, 0, trailCanvas.width, trailCanvas.height)
+        tctx.globalCompositeOperation = 'source-over'
+        trailFade = 0
+      }
     }
 
     const render = (time: number) => {
@@ -641,7 +842,7 @@ export default function Rink() {
       if (goal) {
         const gx = goal.left ? 0 : L
         const pulse = 0.55 + 0.45 * Math.sin(time / 90)
-        const fade = Math.min(1, (2.2 - goal.t) * 1.5)
+        const fade = Math.max(0, Math.min(1, (2.2 - goal.t) * 1.5))
         const g = ctx.createRadialGradient(gx, CY, 0, gx, CY, 45)
         g.addColorStop(0, `rgba(255, 40, 40, ${0.55 * pulse * fade})`)
         g.addColorStop(1, 'rgba(255, 40, 40, 0)')
@@ -661,6 +862,16 @@ export default function Rink() {
         ctx.beginPath()
         ctx.arc(s.x, s.y, 0.22, 0, Math.PI * 2)
         ctx.fill()
+      }
+
+      // Pulsing ring on the puck while a shooter winds up
+      if (game.phase === 'windup') {
+        const p = 0.5 + 0.5 * Math.sin(time / 70)
+        ctx.strokeStyle = `rgba(255, 205, 80, ${0.4 + 0.5 * p})`
+        ctx.lineWidth = 0.22
+        ctx.beginPath()
+        ctx.arc(puck.x, puck.y, PUCK_R + 1 + p * 1.2, 0, Math.PI * 2)
+        ctx.stroke()
       }
 
       // Motion blur: faded copies of the puck behind it when moving fast
@@ -718,10 +929,9 @@ export default function Rink() {
     ro.observe(canvas)
 
     if (reduceMotion) {
+      // No demo animation; the puck rests on a faceoff dot until the player starts a round
       puck.x = GOAL_X + 20
       puck.y = CY - 22
-      render(0)
-      return () => ro.disconnect()
     }
 
     let raf = 0
@@ -729,7 +939,19 @@ export default function Rink() {
     const loop = (now: number) => {
       const dt = Math.min(0.033, (now - last) / 1000)
       last = now
-      step(dt)
+
+      const { playing, round } = propsRef.current
+      if (playing && (game.phase === 'off' || round !== game.round)) {
+        game.round = round
+        startRound()
+      } else if (!playing && game.phase !== 'off') {
+        stopRound()
+      }
+
+      if (game.phase !== 'off' || !reduceMotion) {
+        if (game.phase !== 'off') stepGame(dt)
+        step(dt)
+      }
       render(now)
       raf = requestAnimationFrame(loop)
     }
@@ -738,6 +960,10 @@ export default function Rink() {
     return () => {
       cancelAnimationFrame(raf)
       ro.disconnect()
+      window.removeEventListener('pointermove', onPointer)
+      window.removeEventListener('pointerdown', onPointer)
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
     }
   }, [])
 
