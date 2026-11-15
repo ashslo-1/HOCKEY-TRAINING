@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #000;
+    color: #fff;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  #root { width: 100%; min-height: 100svh; }
+}
+
+/* Narrow screens: the centered footer label collides with the side links */
+@media (max-width: 640px) {
+  .hero-footer { padding: 0 20px 22px !important; }
+  .hero-footer-center { display: none !important; }
+}
