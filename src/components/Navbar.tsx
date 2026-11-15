@@ -1,5 +1,6 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { Link } from './Link'
+import { useRoute } from '../router'
 
 function HomeIcon() {
   return (
@@ -17,6 +18,47 @@ function StatsIcon() {
   )
 }
 
+function CheckIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="8.4" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8.5 12.2 L11 14.7 L15.6 9.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="5.5" width="16" height="15" rx="2.6" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M4 9.6 H20" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8.5 3.6 V6.4 M15.5 3.6 V6.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <g fill="currentColor">
+        <circle cx="8.4" cy="13" r="0.9" /><circle cx="12" cy="13" r="0.9" /><circle cx="15.6" cy="13" r="0.9" />
+        <circle cx="8.4" cy="16.6" r="0.9" /><circle cx="12" cy="16.6" r="0.9" /><circle cx="15.6" cy="16.6" r="0.9" />
+      </g>
+    </svg>
+  )
+}
+
+function PersonIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="8.5" r="3.6" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M5 20 c0-3.6 3.1-6 7-6 s7 2.4 7 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function MailIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2.4" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M4.5 7 L12 12.6 L19.5 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function TargetIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -29,24 +71,24 @@ function TargetIcon() {
 }
 
 const items = [
-  { key: 'home', label: 'Home', Icon: HomeIcon },
-  { key: 'stats', label: 'Stats', Icon: StatsIcon },
-  { key: 'play', label: 'Play the save challenge', Icon: TargetIcon },
+  { path: '/', label: 'Home', Icon: HomeIcon },
+  { path: '/training', label: 'Training', Icon: CheckIcon },
+  { path: '/schedule', label: 'Schedule', Icon: CalendarIcon },
+  { path: '/stats', label: 'Stats', Icon: StatsIcon },
+  { path: '/play', label: 'Play', Icon: TargetIcon },
+  { path: '/about', label: 'About', Icon: PersonIcon },
+  { path: '/contact', label: 'Contact', Icon: MailIcon },
 ]
 
-function go(key: string) {
-  if (key === 'stats') document.getElementById('stats')?.scrollIntoView({ behavior: 'smooth' })
-  else if (key === 'play') window.dispatchEvent(new Event('save-challenge:start'))
-  else window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
 export default function Navbar() {
-  const [active, setActive] = useState('home')
+  const path = useRoute()
 
   return (
-    <div style={{ position: 'fixed', top: '26px', left: 0, right: 0, zIndex: 50, display: 'flex', justifyContent: 'center', padding: '0 20px' }}>
+    <div style={{ position: 'fixed', top: '26px', left: 0, right: 0, zIndex: 50, display: 'flex', justifyContent: 'center', padding: '0 12px' }}>
       <motion.nav
+        aria-label="Main"
         initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="dock"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 10px',
           borderRadius: '999px',
@@ -57,23 +99,22 @@ export default function Navbar() {
           boxShadow: '0 12px 44px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.16)',
         }}
       >
-        {items.map(({ key, label, Icon }) => {
-          const isActive = active === key
+        {items.map(({ path: to, label, Icon }) => {
+          const isActive = path === to
           return (
-            <button
-              key={key}
-              onClick={() => { setActive(key); go(key) }}
+            <Link
+              key={to}
+              to={to}
               aria-label={label}
+              aria-current={isActive ? 'page' : undefined}
               title={label}
+              className="dock-btn"
               style={{
-                position: 'relative', width: '58px', height: '30px', borderRadius: '999px',
-                border: 'none', background: 'transparent', cursor: 'pointer',
+                position: 'relative', height: '30px', borderRadius: '999px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: isActive ? '#fff' : 'rgba(255,255,255,0.62)',
                 transition: 'color 0.2s ease',
               }}
-              onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.85)' }}
-              onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.62)' }}
             >
               {isActive && (
                 <motion.span
@@ -83,7 +124,7 @@ export default function Navbar() {
                 />
               )}
               <span style={{ position: 'relative', zIndex: 1, display: 'flex' }}><Icon /></span>
-            </button>
+            </Link>
           )
         })}
       </motion.nav>

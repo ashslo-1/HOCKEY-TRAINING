@@ -54,3 +54,12 @@
   font-size: min(12px, calc(var(--rink-w) * 0.05));
   letter-spacing: 0.22em;
 }
+
+/* Navbar dock buttons: narrower on phones so all seven fit */
+.dock-btn { width: 58px; }
+.dock-btn:hover { color: rgba(255,255,255,0.9) !important; }
+.dock-btn:focus-visible { outline: 2px solid #9fd8ff; outline-offset: 2px; }
+@media (max-width: 520px) {
+  .dock { gap: 2px !important; padding: 5px 6px !important; }
+  .dock-btn { width: 44px; }
+}

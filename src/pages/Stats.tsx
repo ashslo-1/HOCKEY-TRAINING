@@ -14,7 +14,7 @@ function Tile({ value, caption }: { value: string; caption: string }) {
   )
 }
 
-export default function Stats() {
+export default function StatsPage() {
   const regular = seasons.filter((s) => !s.playoffs)
   const games = regular.reduce((n, s) => n + (s.gp ?? 0), 0)
   const latest = regular[0]
