@@ -17,6 +17,99 @@ const BLUE = 'rgba(46, 116, 245, 0.8)'
 
 type Layout = { s: number; ox: number; oy: number; portrait: boolean; dpr: number; w: number; h: number }
 type Spark = { x: number; y: number; vx: number; vy: number; life: number }
+type Goalie = { left: boolean; y: number; saveT: number }
+
+const GOALIE_R = 1.9 // collision radius of the goalie's body and pads
+const GOALIE_OFFSET = 2.4 // distance in front of the goal line
+const GOALIE_SPEED = 12 // ft/s side-to-side
+const GOALIE_RANGE = 3.4 // how far from center the goalie can slide
+
+function goalieX(left: boolean) {
+  return left ? GOAL_X + GOALIE_OFFSET : L - GOAL_X - GOALIE_OFFSET
+}
+
+// Top-down goalie facing center ice: pads, body, blocker, glove, stick and helmet
+function drawGoalie(ctx: CanvasRenderingContext2D, g: Goalie) {
+  const x = goalieX(g.left)
+  const y = g.y
+  const d = g.left ? 1 : -1
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'
+  ctx.beginPath()
+  ctx.ellipse(x + 0.3, y + 0.3, 1.6, 2.3, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Stick: shaft from the blocker hand, paddle flat on the ice in front of the pads
+  ctx.strokeStyle = '#d9c7a3'
+  ctx.lineCap = 'round'
+  ctx.lineWidth = 0.28
+  ctx.beginPath()
+  ctx.moveTo(x - d * 0.2, y + 1.7)
+  ctx.lineTo(x + d * 1.5, y + 0.4)
+  ctx.stroke()
+  ctx.strokeStyle = '#f1f1f1'
+  ctx.lineWidth = 0.4
+  ctx.beginPath()
+  ctx.moveTo(x + d * 1.5, y + 0.4)
+  ctx.lineTo(x + d * 1.55, y - 1.0)
+  ctx.stroke()
+
+  // Leg pads
+  ctx.fillStyle = '#f4f6f8'
+  ctx.strokeStyle = 'rgba(20, 40, 90, 0.9)'
+  ctx.lineWidth = 0.12
+  for (const side of [-1, 1]) {
+    ctx.beginPath()
+    ctx.roundRect(x + (d > 0 ? 0.2 : -1.2), y + side * 0.55 - (side > 0 ? 0 : 1.1), 1.0, 1.1, 0.25)
+    ctx.fill()
+    ctx.stroke()
+  }
+
+  // Body and shoulders
+  ctx.fillStyle = '#1f3c88'
+  ctx.beginPath()
+  ctx.ellipse(x - d * 0.2, y, 1.0, 1.75, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
+  ctx.lineWidth = 0.14
+  ctx.stroke()
+
+  // Blocker (rectangle) on the stick side, glove (circle) on the other
+  ctx.fillStyle = '#f4f6f8'
+  ctx.beginPath()
+  ctx.roundRect(x - 0.45, y + 1.45, 0.9, 0.6, 0.15)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(x + d * 0.1, y - 1.75, 0.5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(20, 40, 90, 0.9)'
+  ctx.lineWidth = 0.1
+  ctx.stroke()
+
+  // Helmet with cage facing the play
+  ctx.fillStyle = '#e8ecf0'
+  ctx.beginPath()
+  ctx.arc(x - d * 0.25, y, 0.62, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(40, 40, 40, 0.7)'
+  ctx.lineWidth = 0.06
+  ctx.beginPath()
+  for (const o of [-0.3, 0, 0.3]) {
+    ctx.moveTo(x + d * 0.05, y + o)
+    ctx.lineTo(x + d * 0.35, y + o)
+  }
+  ctx.stroke()
+
+  // Brief ring after a save
+  if (g.saveT > 0) {
+    ctx.strokeStyle = `rgba(190, 230, 255, ${g.saveT * 1.2})`
+    ctx.lineWidth = 0.25
+    ctx.beginPath()
+    ctx.arc(x, y, GOALIE_R + (0.7 - g.saveT) * 5, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+}
 
 function computeLayout(w: number, h: number, dpr: number): Layout {
   const portrait = h > w * 1.05
@@ -302,6 +395,45 @@ export default function Rink() {
     let sparks: Spark[] = []
     let idle = 0.9 // seconds until the next shot or pass
     let goal: { left: boolean; t: number } | null = null
+    const goalies: Goalie[] = [
+      { left: true, y: CY, saveT: 0 },
+      { left: false, y: CY, saveT: 0 },
+    ]
+
+    // Slide toward where the puck will cross the goalie's line, or drift back to center
+    const moveGoalies = (dt: number) => {
+      for (const g of goalies) {
+        const gx = goalieX(g.left)
+        const incoming = g.left ? puck.vx < -5 && puck.x > gx : puck.vx > 5 && puck.x < gx
+        const onSide = g.left ? puck.x < L / 2 : puck.x > L / 2
+        let ty = CY
+        if (!goal && incoming && onSide) ty = puck.y + (puck.vy * (gx - puck.x)) / puck.vx
+        else if (!goal && onSide) ty = CY + (puck.y - CY) * 0.35
+        ty = Math.max(CY - GOALIE_RANGE, Math.min(CY + GOALIE_RANGE, ty))
+        const step = GOALIE_SPEED * dt
+        g.y += Math.max(-step, Math.min(step, ty - g.y))
+        g.saveT = Math.max(0, g.saveT - dt)
+      }
+    }
+
+    const collideGoalies = () => {
+      for (const g of goalies) {
+        const gx = goalieX(g.left)
+        const dx = puck.x - gx
+        const dy = puck.y - g.y
+        const dist = Math.hypot(dx, dy)
+        const min = GOALIE_R + PUCK_R
+        if (dist < min && dist > 0) {
+          const nx = dx / dist
+          const ny = dy / dist
+          puck.x = gx + nx * min
+          puck.y = g.y + ny * min
+          const towardNet = g.left ? puck.vx < 0 : puck.vx > 0
+          if (towardNet && Math.hypot(puck.vx, puck.vy) > 25) g.saveT = 0.7
+          reflect(-nx, -ny, 0.45)
+        }
+      }
+    }
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -327,7 +459,7 @@ export default function Rink() {
     // Shoot at a random net, or pass to a random spot on the ice
     const nextPlay = () => {
       let tx: number, ty: number
-      if (Math.random() < 0.55) {
+      if (Math.random() < 0.7) {
         const left = Math.random() < 0.5
         tx = left ? GOAL_X - 1 : L - GOAL_X + 1
         ty = CY + (Math.random() - 0.5) * 9
@@ -442,6 +574,7 @@ export default function Rink() {
           collideBoards()
           collideNet(true, px)
           if (!goal) collideNet(false, px)
+          if (!goal) collideGoalies()
         }
         const friction = Math.exp(-0.32 * dt)
         puck.vx *= friction
@@ -469,6 +602,7 @@ export default function Rink() {
         }
       }
 
+      moveGoalies(dt)
       puck.spin *= Math.exp(-0.5 * dt)
 
       for (const s of sparks) {
@@ -511,6 +645,8 @@ export default function Rink() {
         ctx.fillRect(0, 0, L, W)
         ctx.restore()
       }
+
+      for (const g of goalies) drawGoalie(ctx, g)
 
       // Ice spray
       for (const s of sparks) {

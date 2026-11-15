@@ -40,9 +40,9 @@ export default function Hero() {
               <path d="M18.5 2.5 L9.4 16.2 Q8.6 17.4 7.1 17.4 H3" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
               <ellipse cx="12" cy="21" rx="3.2" ry="1.3" fill="#fff" />
             </svg>
-            <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#fff', fontFamily: "'Inter', sans-serif", paddingLeft: '0.28em' }}>Training Hub</span>
+            <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#fff', fontFamily: "'Inter', sans-serif", paddingLeft: '0.28em' }}>Goalie Training</span>
           </div>
-          <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '0.34em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)', fontFamily: "'Inter', sans-serif", paddingLeft: '0.34em' }}>Drills · Schedule · Goals</span>
+          <span style={{ fontSize: '10px', fontWeight: 500, letterSpacing: '0.34em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)', fontFamily: "'Inter', sans-serif", paddingLeft: '0.34em' }}>Saves · Schedule · Goals</span>
         </motion.div>
 
         {/* Headline */}
@@ -59,7 +59,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.42, ease: 'easeOut' }}
           style={{ margin: '24px 0 0', maxWidth: '560px', fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 400, fontSize: '18px', lineHeight: 1.5, color: 'rgba(255,255,255,0.88)', textShadow: '0 1px 20px rgba(0,0,0,0.6)' }}
         >
-          Practice plans, drills, and a training schedule for every Sloan player.
+          Drills, practice plans, and a training schedule for Sloan Hockey's goalie.
         </motion.p>
 
         {/* Oval button — true ellipse via border-radius: 50% */}
