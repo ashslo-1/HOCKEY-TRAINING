@@ -18,7 +18,7 @@
   #root { width: 100%; min-height: 100svh; }
 }
 
-/* Narrow screens: the centered footer label collides with the side links */
+/* At 640px wide or less, hide the centered footer label because it overlaps the side links */
 @media (max-width: 640px) {
   .hero-footer { padding: 0 20px 22px !important; }
   .hero-footer-center { display: none !important; }

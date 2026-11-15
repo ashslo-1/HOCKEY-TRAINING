@@ -10,7 +10,7 @@ const GOAL_X = 11 // goal line distance from end boards
 const BLUE_X = 75 // blue line distance from end boards
 const NET_HALF = 3 // nets are 6 ft wide
 const NET_DEPTH = 3.4
-const PUCK_R = 1.1 // drawn larger than a real puck so it reads on screen
+const PUCK_R = 1.1 // drawn larger than a real puck (0.125 ft) so it is visible
 
 const RED = 'rgba(225, 45, 57, 0.78)'
 const BLUE = 'rgba(46, 116, 245, 0.8)'
@@ -30,7 +30,7 @@ function computeLayout(w: number, h: number, dpr: number): Layout {
   return { s, ox: (w - rw) / 2, oy: (h - rh) / 2, portrait, dpr, w, h }
 }
 
-// Map rink feet to device pixels. Portrait swaps the axes so the rink stands upright.
+// Map rink feet to device pixels. In portrait, swap the axes so the rink is drawn vertically.
 function applyRinkTransform(ctx: CanvasRenderingContext2D, lay: Layout) {
   const k = lay.s * lay.dpr
   if (lay.portrait) ctx.setTransform(0, k, k, 0, lay.ox * lay.dpr, lay.oy * lay.dpr)
@@ -167,7 +167,7 @@ function drawStatic(ctx: CanvasRenderingContext2D, lay: Layout) {
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, w * dpr, h * dpr)
 
-  // Arena: dark stands with a spotlight pooled over the ice
+  // Arena background: dark fill with a lighter radial gradient centered on the rink
   ctx.fillStyle = '#04080c'
   ctx.fillRect(0, 0, w * dpr, h * dpr)
   const spot = ctx.createRadialGradient(w * dpr / 2, h * dpr / 2, 0, w * dpr / 2, h * dpr / 2, Math.max(w, h) * dpr * 0.7)
@@ -218,7 +218,7 @@ function drawStatic(ctx: CanvasRenderingContext2D, lay: Layout) {
     ctx.fillRect(rand() * L, rand() * W, 0.15, 0.15)
   }
 
-  // Markings sit slightly under the ice, so give them a soft bloom
+  // Blur the markings slightly, as if painted under the ice
   ctx.shadowBlur = 6 * dpr
   ctx.shadowColor = 'rgba(0, 0, 0, 0)'
 
@@ -265,7 +265,7 @@ function drawStatic(ctx: CanvasRenderingContext2D, lay: Layout) {
   drawGoalEnd(ctx, true)
   drawGoalEnd(ctx, false)
 
-  // Darken the ice toward the boards so the center reads as lit
+  // Darken the ice toward the boards so the center looks brighter
   ctx.shadowColor = 'rgba(0,0,0,0)'
   const vignette = ctx.createRadialGradient(L / 2, CY, 30, L / 2, CY, 120)
   vignette.addColorStop(0, 'rgba(0,0,0,0)')
@@ -382,7 +382,7 @@ export default function Rink() {
       if (puck.y > W - PUCK_R) { puck.y = W - PUCK_R; reflect(0, 1) }
     }
 
-    // The net is a solid box. Crossing its open front is a goal; any other side is a deflection.
+    // Treat the net as a solid box: a puck entering through the open front scores, and a puck hitting any other side bounces off.
     const collideNet = (left: boolean, prevX: number) => {
       const gx = left ? GOAL_X : L - GOAL_X
       const backX = left ? gx - NET_DEPTH : gx + NET_DEPTH
@@ -447,7 +447,7 @@ export default function Rink() {
         puck.vx *= friction
         puck.vy *= friction
 
-        // Scratch the trail onto the ice
+        // Draw the puck's path onto the trail canvas
         const speed = Math.hypot(puck.vx, puck.vy)
         if (speed > 1) {
           applyRinkTransform(tctx, lay)
@@ -520,7 +520,7 @@ export default function Rink() {
         ctx.fill()
       }
 
-      // Motion ghosts
+      // Motion blur: faded copies of the puck behind it when moving fast
       const speed = Math.hypot(puck.vx, puck.vy)
       if (speed > 20) {
         for (let i = 1; i <= 4; i++) {
