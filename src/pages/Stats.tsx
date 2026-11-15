@@ -25,9 +25,9 @@ export default function StatsPage() {
       <div style={{ maxWidth: '980px', margin: '0 auto' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
           <div style={label}>{profile.position} · Stats</div>
-          <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(2.4rem, 6vw, 4rem)', fontWeight: 700, textTransform: 'uppercase', margin: '10px 0 0', lineHeight: 1 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(2.4rem, 6vw, 4rem)', fontWeight: 700, textTransform: 'uppercase', margin: '10px 0 0', lineHeight: 1 }}>
             {profile.name}
-          </h2>
+          </h1>
           {profile.details.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px', marginTop: '18px' }}>
               {profile.details.map((d) => (
