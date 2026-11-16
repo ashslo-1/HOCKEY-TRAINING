@@ -4,9 +4,6 @@ import { motion } from 'framer-motion'
 import Rink from './Rink'
 import { navigate } from '../router'
 
-// Background video from the original template, loaded from its hosted URL
-const VIDEO_URL = 'https://pub-1e5b4001b36b47e28e6a2fb775966a79.r2.dev/templates/glacier/hero.mp4'
-
 const label: CSSProperties = {
   fontSize: '10.5px', fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase',
   color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", textDecoration: 'none',
@@ -15,7 +12,6 @@ const label: CSSProperties = {
 export default function Hero() {
   return (
     <section id="top" style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: '#04080c', '--rink-w': '90vw', '--rink-h': '60vh' } as CSSProperties}>
-      <video style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} src={VIDEO_URL} autoPlay muted loop playsInline />
       <Rink />
       {/* Overlays */}
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.12)', pointerEvents: 'none' }} />
@@ -65,18 +61,15 @@ export default function Hero() {
         {/* Oval button — true ellipse via border-radius: 50% */}
         <motion.button
           type="button"
-          onClick={() => navigate('/play')}
+          onClick={() => navigate('/training')}
           className="hero-btn"
           initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.58, ease: 'easeOut' }}
           whileHover={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
           whileTap={{ scale: 0.97 }}
           style={{ borderRadius: '50%', border: '1px solid rgba(255,255,255,0.6)', color: '#fff', cursor: 'pointer', fontWeight: 500, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', pointerEvents: 'auto' }}
         >
-          Play Goalie
+          See Training
         </motion.button>
-        <span className="hero-hint" style={{ marginTop: '12px', fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
-          Stop 10 shots in the save challenge
-        </span>
       </div>
 
       {/* Footer bar */}

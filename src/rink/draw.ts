@@ -214,8 +214,7 @@ export function drawStatic(ctx: CanvasRenderingContext2D, lay: Layout) {
   ctx.clearRect(0, 0, w * dpr, h * dpr)
 
   // Arena background: dark fill with a lighter radial gradient centered on the rink
-  // Semi-transparent so the background video shows around the rink
-  ctx.fillStyle = 'rgba(4, 8, 12, 0.55)'
+  ctx.fillStyle = '#04080c'
   ctx.fillRect(0, 0, w * dpr, h * dpr)
   const spot = ctx.createRadialGradient(w * dpr / 2, h * dpr / 2, 0, w * dpr / 2, h * dpr / 2, Math.max(w, h) * dpr * 0.7)
   spot.addColorStop(0, 'rgba(70, 120, 160, 0.28)')
@@ -346,46 +345,6 @@ export function drawGoalLight(ctx: CanvasRenderingContext2D, left: boolean, t: n
   ctx.fillStyle = g
   ctx.fillRect(0, 0, L, W)
   ctx.restore()
-}
-
-// Shot preview while a shooter winds up: a dashed line from the puck to a marker on the goal line.
-// `progress` runs from 0 to 1 over the windup.
-export function drawAim(ctx: CanvasRenderingContext2D, from: { x: number; y: number }, to: { x: number; y: number }, progress: number, color = '255, 205, 80') {
-  const p = Math.max(0, Math.min(1, progress))
-  const ex = from.x + (to.x - from.x) * (0.35 + 0.65 * p)
-  const ey = from.y + (to.y - from.y) * (0.35 + 0.65 * p)
-  ctx.save()
-  ctx.strokeStyle = `rgba(${color}, ${0.35 + 0.45 * p})`
-  ctx.lineWidth = 0.3
-  ctx.setLineDash([1.2, 0.9])
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.moveTo(from.x, from.y)
-  ctx.lineTo(ex, ey)
-  ctx.stroke()
-  ctx.setLineDash([])
-  // Target cross on the goal line
-  ctx.strokeStyle = `rgba(${color}, ${0.5 + 0.5 * p})`
-  ctx.lineWidth = 0.28
-  const r = 0.9
-  ctx.beginPath()
-  ctx.arc(to.x, to.y, r, 0, Math.PI * 2)
-  ctx.moveTo(to.x - r - 0.5, to.y)
-  ctx.lineTo(to.x + r + 0.5, to.y)
-  ctx.moveTo(to.x, to.y - r - 0.5)
-  ctx.lineTo(to.x, to.y + r + 0.5)
-  ctx.stroke()
-  ctx.restore()
-}
-
-// Ring on the puck while a shooter winds up. Pulses unless `steady` is set.
-export function drawWindupRing(ctx: CanvasRenderingContext2D, puck: Puck, time: number, steady: boolean) {
-  const p = steady ? 0.6 : 0.5 + 0.5 * Math.sin(time / 70)
-  ctx.strokeStyle = `rgba(255, 205, 80, ${0.4 + 0.5 * p})`
-  ctx.lineWidth = 0.22
-  ctx.beginPath()
-  ctx.arc(puck.x, puck.y, PUCK_R + 1 + p * 1.2, 0, Math.PI * 2)
-  ctx.stroke()
 }
 
 // Puck: motion blur, spotlight halo, shadow, body, rim highlight and spinning grip texture

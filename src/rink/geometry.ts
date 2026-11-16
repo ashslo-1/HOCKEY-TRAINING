@@ -15,9 +15,6 @@ export const GOALIE_OFFSET = 2.4 // distance in front of the goal line
 export const GOALIE_SPEED = 12 // ft/s side-to-side for computer goalies
 export const GOALIE_RANGE = 3.4 // how far from center a goalie can slide
 
-// The player defends the right net (bottom net on phones)
-export const PLAYER_LEFT = false
-export const PLAYER_GOAL_X = L - GOAL_X
 
 export const RED = 'rgba(225, 45, 57, 0.78)'
 export const BLUE = 'rgba(46, 116, 245, 0.8)'

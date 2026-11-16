@@ -6,7 +6,6 @@ import HomePage from './pages/Home'
 import TrainingPage from './pages/Training'
 import SchedulePage from './pages/Schedule'
 import StatsPage from './pages/Stats'
-import PlayPage from './pages/Play'
 import AboutPage from './pages/About'
 import ContactPage from './pages/Contact'
 import NotFoundPage from './pages/NotFound'
@@ -17,7 +16,6 @@ const pages: Record<string, { title: string; Component: () => React.JSX.Element 
   '/training': { title: 'Training · Nolan Sloan', Component: TrainingPage },
   '/schedule': { title: 'Schedule · Nolan Sloan', Component: SchedulePage },
   '/stats': { title: 'Stats · Nolan Sloan', Component: StatsPage },
-  '/play': { title: 'Save Challenge · Nolan Sloan', Component: PlayPage },
   '/about': { title: 'About · Nolan Sloan', Component: AboutPage },
   '/contact': { title: 'Contact · Nolan Sloan', Component: ContactPage },
 }

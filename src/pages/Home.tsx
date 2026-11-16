@@ -11,7 +11,6 @@ const pages = [
   { to: '/training', kicker: 'Drills and sessions', title: 'Training', text: 'Session types and the drills used to build each goalie skill.', cta: 'See training' },
   { to: '/schedule', kicker: 'Dates and rinks', title: 'Schedule', text: 'Upcoming lessons, clinics and camps with dates and locations.', cta: 'View schedule' },
   { to: '/stats', kicker: 'Season numbers', title: 'Stats', text: `${site.coachName}'s season-by-season goalie statistics.`, cta: 'View stats' },
-  { to: '/play', kicker: 'Browser game', title: 'Save Challenge', text: 'A short browser game where you try to stop shots in front of the net.', cta: 'Play the game' },
 ]
 
 export default function HomePage() {
@@ -43,7 +42,7 @@ export default function HomePage() {
             </ul>
           </Section>
 
-          <Section kicker="Explore" title="Training, schedule, stats and the game">
+          <Section kicker="Explore" title="Training, schedule and stats">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '14px' }}>
               {pages.map((p, i) => (
                 <motion.div

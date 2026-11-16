@@ -13,7 +13,7 @@ export const colors = {
   ice: '#9fd8ff', // light blue accent
   red: '#e12d39', // rink red line
   blue: '#2e74f5', // rink blue line
-  gold: '#ffcd50', // player highlight in the game
+  gold: '#ffcd50', // warm accent
 }
 
 export const fonts = {

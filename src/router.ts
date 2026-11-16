@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 // Minimal hash router. Hash URLs (#/training) work on GitHub Pages without server rewrites.
 
-export const ROUTES = ['/', '/training', '/schedule', '/stats', '/play', '/about', '/contact'] as const
+export const ROUTES = ['/', '/training', '/schedule', '/stats', '/about', '/contact'] as const
 export type Route = (typeof ROUTES)[number]
 
 function readPath(): string {

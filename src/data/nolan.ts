@@ -28,7 +28,7 @@ export const seasons: Season[] = []
 // .915 style, the way hockey save percentages are usually written
 export const formatSvPct = (v: number | null | undefined) => (v == null ? '—' : v.toFixed(3).replace(/^0/, ''))
 
-// Career save percentage weighted by games played, for comparison in the save challenge
+// Career save percentage weighted by games played
 export function careerSvPct(rows: Season[] = seasons): number | null {
   const valid = rows.filter((r) => !r.playoffs && r.svPct != null && r.gp)
   const games = valid.reduce((n, r) => n + (r.gp ?? 0), 0)

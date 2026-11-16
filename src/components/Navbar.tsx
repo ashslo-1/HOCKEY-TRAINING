@@ -59,23 +59,11 @@ function MailIcon() {
   )
 }
 
-function TargetIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="13" r="7.4" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="11" cy="13" r="3.3" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M11 13 L19 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M15.5 5 H19 V8.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 const items = [
   { path: '/', label: 'Home', Icon: HomeIcon },
   { path: '/training', label: 'Training', Icon: CheckIcon },
   { path: '/schedule', label: 'Schedule', Icon: CalendarIcon },
   { path: '/stats', label: 'Stats', Icon: StatsIcon },
-  { path: '/play', label: 'Play', Icon: TargetIcon },
   { path: '/about', label: 'About', Icon: PersonIcon },
   { path: '/contact', label: 'Contact', Icon: MailIcon },
 ]

@@ -15,7 +15,6 @@ export const nav = [
   { path: '/training', label: 'Training' },
   { path: '/schedule', label: 'Schedule' },
   { path: '/stats', label: 'Stats' },
-  { path: '/play', label: 'Play' },
   { path: '/about', label: 'About' },
   { path: '/contact', label: 'Contact' },
 ] as const
